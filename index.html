@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>Timeregistrering</title>
+<link rel="manifest" href="./manifest.json"/>
+<meta name="theme-color" content="#1e3a5f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Timer"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f4f8;min-height:100vh;max-width:420px;margin:0 auto}
+button{font-family:inherit}
+.header{background:linear-gradient(135deg,#1e3a5f,#2e6da4);color:#fff;padding:24px 20px 16px;border-radius:0 0 24px 24px;position:relative}
+.hdate{font-size:13px;opacity:.8;margin-bottom:4px}
+.hclock{font-size:36px;font-weight:700;letter-spacing:2px}
+.hclock span{font-size:20px;opacity:.6}
+.badge{margin-top:8px;background:rgba(255,255,255,.15);border-radius:10px;padding:6px 12px;display:inline-block;font-size:13px}
+.gear{position:absolute;top:18px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:20px;color:#fff;display:flex;align-items:center;justify-content:center}
+.srow{display:flex;gap:8px;padding:14px 16px 0}
+.sbox{flex:1;background:#fff;border-radius:14px;padding:10px 4px 8px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:2px solid transparent;cursor:pointer;transition:all .2s}
+.sbox.active{background:#1e3a5f;border-color:#2e6da4;box-shadow:0 4px 14px rgba(30,58,95,.35)}
+.sbox .ico{font-size:18px}
+.sbox .lbl{font-size:9px;color:#888;margin:2px 0}
+.sbox.active .lbl{color:#a8c8f0}
+.sbox .val{font-size:12px;font-weight:700;color:#1e3a5f}
+.sbox.active .val{color:#fff}
+.sbox .plbl{font-size:9px;color:#aaa;margin-top:1px;min-height:12px}
+.sbox.active .plbl{color:#7aaadc}
+.navrow{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px}
+.navbtn{background:none;border:none;cursor:pointer;font-size:14px;color:#888;padding:2px 4px;border-radius:4px}
+.sbox.active .navbtn{color:#a8c8f0}
+.tabs{display:flex;margin:14px 16px 0;background:#dde4ee;border-radius:12px;padding:4px}
+.tab{flex:1;padding:8px 0;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;background:transparent;color:#666;transition:all .2s}
+.tab.active{background:#fff;color:#1e3a5f;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.cnt{padding:16px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card h3{font-size:16px;color:#1e3a5f;margin-bottom:14px}
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.binn{padding:18px 0;border-radius:14px;border:none;cursor:pointer;background:#27ae60;color:#fff;font-weight:700;font-size:16px}
+.binn:disabled{background:#d0e8c8;opacity:.7;cursor:not-allowed}
+.bout{padding:18px 0;border-radius:14px;border:none;cursor:pointer;background:#e74c3c;color:#fff;font-weight:700;font-size:16px}
+.bout:disabled{background:#f0c0b8;opacity:.5;cursor:not-allowed}
+.bsub{font-size:12px;font-weight:400;margin-top:4px}
+.tsum{margin-top:14px;text-align:center;background:#eaf4fb;border-radius:12px;padding:10px 0;color:#1e3a5f;font-weight:600}
+.flbl{font-size:12px;color:#888;margin-bottom:4px}
+.inp{width:100%;padding:10px 8px;border-radius:10px;border:1.5px solid #dde;font-size:16px;font-family:inherit}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.bsave{width:100%;padding:13px 0;border-radius:12px;border:none;cursor:pointer;background:#2e6da4;color:#fff;font-weight:700;font-size:15px}
+.lhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.tbar{background:#eaf4fb;border-radius:10px;padding:8px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
+.dentry{border-bottom:1px solid #f0f0f0;padding-bottom:12px;margin-bottom:12px}
+.dentry:last-child{border-bottom:none;margin-bottom:0}
+.drow{display:flex;justify-content:space-between;align-items:center}
+.ddato{font-weight:700;color:#1e3a5f;font-size:15px}
+.dsum{background:#eaf4fb;border-radius:8px;padding:4px 10px;font-weight:700;color:#2e6da4;font-size:14px}
+.olinje{font-size:14px;color:#555;margin-top:6px;padding:8px 10px;background:#f8f8f8;border-radius:8px;cursor:pointer}
+.olinje:active{background:#e8eef5}
+.empty{color:#aaa;text-align:center;padding:30px 0}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:99;display:none}
+.overlay.on{display:block}
+.panel{position:fixed;bottom:0;left:0;right:0;max-width:420px;margin:0 auto;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.15);padding:20px;z-index:100;transform:translateY(100%);transition:transform .25s ease}
+.panel.on{transform:translateY(0)}
+.pinfo{font-size:15px;color:#333;margin-bottom:16px;text-align:center}
+.pinfo strong{color:#1e3a5f;display:block;margin-bottom:4px}
+.bred{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;background:#e74c3c;color:#fff;font-weight:700;font-size:16px;margin-bottom:10px}
+.bgry{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;background:#f0f0f0;color:#555;font-weight:600;font-size:15px}
+.bgrn{width:100%;padding:13px 0;border-radius:12px;border:none;cursor:pointer;background:#27ae60;color:#fff;font-weight:700;font-size:15px;margin-bottom:10px}
+.bblu{width:100%;padding:13px 0;border-radius:12px;border:none;cursor:pointer;background:#2e6da4;color:#fff;font-weight:700;font-size:15px;margin-bottom:10px}
+.sep{border-top:1px solid #eee;margin:16px 0 12px}
+.sinp{width:80px;padding:8px 10px;border-radius:10px;border:1.5px solid #dde;font-size:16px;font-family:inherit;text-align:center}
+.srow2{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hdate" id="dateTxt"></div>
+  <div class="hclock" id="clockTxt">--:--<span>:--</span></div>
+  <div id="activeBadge" style="display:none" class="badge"></div>
+  <button class="gear" onclick="openSettings()">&#9881;&#65039;</button>
+</div>
+
+<div class="srow">
+  <div class="sbox" id="box-dag" onclick="toggleFilter('dag')">
+    <div class="ico">&#128197;</div><div class="lbl">Dag</div>
+    <div class="val" id="sum-dag">0t 00min</div>
+    <div class="plbl" id="plbl-dag"></div>
+    <div class="navrow">
+      <button class="navbtn" onclick="nav(event,'dag',-1)">&#9664;</button>
+      <button class="navbtn" onclick="nav(event,'dag',1)">&#9654;</button>
+    </div>
+  </div>
+  <div class="sbox" id="box-uke" onclick="toggleFilter('uke')">
+    <div class="ico">&#128198;</div><div class="lbl">Uke</div>
+    <div class="val" id="sum-uke">0t 00min</div>
+    <div class="plbl" id="plbl-uke"></div>
+    <div class="navrow">
+      <button class="navbtn" onclick="nav(event,'uke',-1)">&#9664;</button>
+      <button class="navbtn" onclick="nav(event,'uke',1)">&#9654;</button>
+    </div>
+  </div>
+  <div class="sbox" id="box-mnd" onclick="toggleFilter('mnd')">
+    <div class="ico">&#128467;</div><div class="lbl">M&aring;ned</div>
+    <div class="val" id="sum-mnd">0t 00min</div>
+    <div class="plbl" id="plbl-mnd"></div>
+    <div class="navrow">
+      <button class="navbtn" onclick="nav(event,'mnd',-1)">&#9664;</button>
+      <button class="navbtn" onclick="nav(event,'mnd',1)">&#9654;</button>
+    </div>
+  </div>
+  <div class="sbox" id="box-aar" onclick="toggleFilter('aar')">
+    <div class="ico">&#128202;</div><div class="lbl">&#197;r</div>
+    <div class="val" id="sum-aar">0t 00min</div>
+    <div class="plbl" id="plbl-aar"></div>
+    <div class="navrow">
+      <button class="navbtn" onclick="nav(event,'aar',-1)">&#9664;</button>
+      <button class="navbtn" onclick="nav(event,'aar',1)">&#9654;</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-reg" onclick="showTab('reg')">&#128197; Registrer</button>
+  <button class="tab" id="tab-logg" onclick="showTab('logg')">&#128203; Logg</button>
+</div>
+
+<div class="cnt">
+  <div id="panel-reg">
+    <div class="card">
+      <h3>&#128205; Registrer med knapp</h3>
+      <div class="brow">
+        <button class="binn" id="btnInn" onclick="sjekkInn()">&#9989; Sjekk inn<div class="bsub" id="innTxt"></div></button>
+        <button class="bout" id="btnUt" onclick="sjekkUt()" disabled>&#128682; Sjekk ut<div class="bsub" id="utTxt"></div></button>
+      </div>
+      <div class="tsum" id="todaySum" style="display:none"></div>
+    </div>
+    <div class="card">
+      <h3>&#9999;&#65039; Legg inn manuelt</h3>
+      <div style="margin-bottom:12px">
+        <div class="flbl">Dato</div>
+        <input class="inp" id="mDato" type="text" placeholder="dd.mm.yyyy" maxlength="10" oninput="autoDato(this)"/>
+      </div>
+      <div class="g2">
+        <div><div class="flbl">Inn-tid</div><input class="inp" id="mInn" type="text" placeholder="tt:mm" maxlength="5" oninput="autoTid(this)"/></div>
+        <div><div class="flbl">Ut-tid</div><input class="inp" id="mUt" type="text" placeholder="tt:mm" maxlength="5" oninput="autoTid(this)"/></div>
+      </div>
+      <button class="bsave" onclick="registrerManuelt()">Lagre</button>
+    </div>
+  </div>
+
+  <div id="panel-logg" style="display:none">
+    <div class="card">
+      <div class="lhdr"><h3 id="loggTitle">&#128203; Alle registreringer</h3></div>
+      <div id="totalBar" class="tbar" style="display:none">
+        <span style="font-size:13px;color:#555">Total</span>
+        <span id="totalVal" style="font-weight:700;color:#1e3a5f;font-size:16px"></span>
+      </div>
+      <div id="loggContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<div class="panel" id="slettPanel">
+  <div class="pinfo">
+    <strong id="slettDato"></strong>
+    <span id="slettTid"></span>
+  </div>
+  <button class="bred" onclick="bekreftSlett()">&#128465; Slett denne registreringen</button>
+  <button class="bgry" onclick="closeAll()">Avbryt</button>
+</div>
+
+<div class="panel" id="settPanel">
+  <h3 style="font-size:17px;color:#1e3a5f;margin-bottom:20px;text-align:center">&#9881;&#65039; Innstillinger</h3>
+  <div class="srow2">
+    <label style="font-size:15px;color:#333">Normal arbeidstid per dag</label>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input class="sinp" id="settTimer" type="number" min="0.5" max="24" step="0.5"/>
+      <span style="font-size:14px;color:#888">timer</span>
+    </div>
+  </div>
+  <button class="bblu" onclick="saveSettings()">Lagre innstillinger</button>
+  <div class="sep"></div>
+  <div style="font-size:13px;color:#888;margin-bottom:10px">Sikkerhetskopi</div>
+  <button class="bgrn" onclick="doExport()">&#11015;&#65039; Eksporter til JSON-fil</button>
+  <label style="display:block;width:100%;padding:13px 0;border-radius:12px;border:none;cursor:pointer;background:#f0f0f0;color:#555;font-weight:600;font-size:15px;text-align:center;margin-bottom:10px">
+    &#11014;&#65039; Importer fra JSON-fil
+    <input type="file" accept=".json" onchange="doImport(this)" style="display:none"/>
+  </label>
+  <button class="bgry" onclick="closeAll()">Avbryt</button>
+</div>
+
+<script>
+var logg = [];
+var normMin = 480;
+var innTid = null;
+var utTid = null;
+var aktivFilter = null;
+var valgtSlett = null;
+var off = {dag:0, uke:0, mnd:0, aar:0};
+var now = new Date();
+var todayStr = p2(now.getDate())+'.'+p2(now.getMonth()+1)+'.'+now.getFullYear();
+
+try { logg = JSON.parse(localStorage.getItem('timelogg') || '[]'); } catch(e) { logg = []; }
+try { var ns = localStorage.getItem('normaltid'); if (ns) normMin = parseFloat(ns)*60; } catch(e) {}
+
+function p2(n) { return String(n).padStart(2,'0'); }
+
+function mts(min) {
+  if (!min) return '0t 00min';
+  return Math.floor(min/60)+'t '+p2(Math.round(min%60))+'min';
+}
+
+function getWeek(d) {
+  var dt = new Date(d.getTime());
+  dt.setHours(0,0,0,0);
+  dt.setDate(dt.getDate()+3-((dt.getDay()+6)%7));
+  var w1 = new Date(dt.getFullYear(),0,4);
+  return 1+Math.round(((dt-w1)/86400000-3+((w1.getDay()+6)%7))/7);
+}
+
+function parseDato(str) {
+  var p = str.trim().split('.');
+  if (p.length !== 3) return null;
+  return {dd:parseInt(p[0]), mm:parseInt(p[1]), yyyy:parseInt(p[2])};
+}
+
+function getPRef(key) {
+  var n = new Date();
+  var o = off[key];
+  if (key === 'dag') {
+    var d = new Date(n); d.setDate(d.getDate()+o);
+    return {dd:d.getDate(), mm:d.getMonth()+1, yyyy:d.getFullYear()};
+  }
+  if (key === 'uke') {
+    var d = new Date(n); d.setDate(d.getDate()+o*7);
+    return {week:getWeek(d), yyyy:d.getFullYear()};
+  }
+  if (key === 'mnd') {
+    var tot = n.getMonth()+o;
+    var mm = ((tot%12)+12)%12;
+    var yyyy = n.getFullYear()+Math.floor(tot/12);
+    return {mm:mm+1, yyyy:yyyy};
+  }
+  if (key === 'aar') {
+    return {yyyy:n.getFullYear()+o};
+  }
+  return {};
+}
+
+function match(o, key) {
+  var p = parseDato(o.dato); if (!p) return false;
+  var r = getPRef(key);
+  if (key === 'dag') return p.dd===r.dd && p.mm===r.mm && p.yyyy===r.yyyy;
+  if (key === 'uke') { var d=new Date(p.yyyy,p.mm-1,p.dd); return getWeek(d)===r.week && p.yyyy===r.yyyy; }
+  if (key === 'mnd') return p.mm===r.mm && p.yyyy===r.yyyy;
+  if (key === 'aar') return p.yyyy===r.yyyy;
+  return true;
+}
+
+function periodeLabel(key) {
+  var r = getPRef(key);
+  var mn = ['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
+  if (key === 'dag') {
+    if (off[key]===0) return 'I dag';
+    if (off[key]===-1) return 'I går';
+    return p2(r.dd)+'.'+p2(r.mm)+'.'+r.yyyy;
+  }
+  if (key === 'uke') return 'Uke '+r.week+(off[key]===0?' (nå)':' '+r.yyyy);
+  if (key === 'mnd') return off[key]===0 ? 'Denne mnd' : mn[r.mm-1]+' '+r.yyyy;
+  if (key === 'aar') return off[key]===0 ? 'Dette året' : String(r.yyyy);
+  return '';
+}
+
+function sumFor(key) {
+  var t = 0;
+  for (var i=0; i<logg.length; i++) {
+    if (match(logg[i], key)) t += logg[i].minutter||0;
+  }
+  return t;
+}
+
+function saveLogg() {
+  try { localStorage.setItem('timelogg', JSON.stringify(logg)); } catch(e) {}
+}
+
+function updateStats() {
+  var keys = ['dag','uke','mnd','aar'];
+  for (var i=0; i<keys.length; i++) {
+    var k = keys[i];
+    document.getElementById('sum-'+k).textContent = mts(sumFor(k));
+    document.getElementById('plbl-'+k).textContent = periodeLabel(k);
+  }
+}
+
+function nav(e, key, dir) {
+  e.stopPropagation();
+  off[key] += dir;
+  updateStats();
+  if (aktivFilter === key) renderLogg();
+}
+
+function toggleFilter(key) {
+  aktivFilter = (aktivFilter === key) ? null : key;
+  showTab(aktivFilter ? 'logg' : 'reg');
+  var keys = ['dag','uke','mnd','aar'];
+  for (var i=0; i<keys.length; i++) {
+    document.getElementById('box-'+keys[i]).className = 'sbox'+(keys[i]===aktivFilter?' active':'');
+  }
+}
+
+function showTab(t) {
+  document.getElementById('panel-reg').style.display = t==='reg' ? '' : 'none';
+  document.getElementById('panel-logg').style.display = t==='logg' ? '' : 'none';
+  document.getElementById('tab-reg').className = t==='reg' ? 'tab active' : 'tab';
+  document.getElementById('tab-logg').className = t==='logg' ? 'tab active' : 'tab';
+  if (t === 'reg') {
+    aktivFilter = null;
+    var keys = ['dag','uke','mnd','aar'];
+    for (var i=0; i<keys.length; i++) document.getElementById('box-'+keys[i]).className='sbox';
+  }
+  renderLogg();
+}
+
+function renderLogg() {
+  var filtered = [];
+  for (var i=0; i<logg.length; i++) {
+    if (!aktivFilter || match(logg[i], aktivFilter)) filtered.push(logg[i]);
+  }
+  var titles = {dag:'&#128197; '+periodeLabel('dag'), uke:'&#128198; '+periodeLabel('uke'), mnd:'&#128467; '+periodeLabel('mnd'), aar:'&#128202; '+periodeLabel('aar')};
+  document.getElementById('loggTitle').innerHTML = aktivFilter ? titles[aktivFilter] : '&#128203; Alle registreringer';
+
+  var dagMap = {}, dagOrder = [];
+  for (var i=0; i<filtered.length; i++) {
+    var o = filtered[i];
+    if (!dagMap[o.dato]) { dagMap[o.dato]={min:0,oppf:[]}; dagOrder.push(o.dato); }
+    dagMap[o.dato].min += o.minutter||0;
+    dagMap[o.dato].oppf.push(o);
+  }
+
+  var tb = document.getElementById('totalBar');
+  if (aktivFilter) {
+    tb.style.display = 'flex';
+    var tm = sumFor(aktivFilter);
+    var dm = tm - dagOrder.length*normMin;
+    var dc = dm>=0 ? '#27ae60' : '#e74c3c';
+    var dt = dm>=0 ? ('+'+mts(dm)) : ('-'+mts(Math.abs(dm)));
+    document.getElementById('totalVal').innerHTML = mts(tm)+' <span style="font-size:12px;font-weight:600;color:'+dc+';margin-left:6px">'+dt+'</span>';
+  } else {
+    tb.style.display = 'none';
+  }
+
+  var el = document.getElementById('loggContent');
+  el.innerHTML = '';
+  if (!dagOrder.length) {
+    el.innerHTML = '<div class="empty">'+(aktivFilter ? 'Ingen registreringer for denne perioden.' : 'Ingen registreringer ennå.')+'</div>';
+    return;
+  }
+
+  for (var d=0; d<dagOrder.length; d++) {
+    var dato = dagOrder[d];
+    var entry = dagMap[dato];
+    var div = document.createElement('div');
+    div.className = 'dentry';
+
+    var row = document.createElement('div'); row.className='drow';
+    var ds = document.createElement('span'); ds.className='ddato'; ds.textContent=dato;
+    var ss = document.createElement('span'); ss.className='dsum'; ss.textContent=mts(entry.min);
+    row.appendChild(ds); row.appendChild(ss); div.appendChild(row);
+
+    var dm2 = entry.min - normMin;
+    var de = document.createElement('div');
+    de.style.cssText = 'font-size:12px;margin-top:4px;padding:3px 8px;border-radius:6px;display:inline-block;font-weight:600;';
+    if (dm2 >= 0) { de.style.background='#e6f4ea'; de.style.color='#27ae60'; de.textContent='+'+mts(dm2); }
+    else { de.style.background='#fdecea'; de.style.color='#e74c3c'; de.textContent='-'+mts(Math.abs(dm2)); }
+    div.appendChild(de);
+
+    for (var j=0; j<entry.oppf.length; j++) {
+      var o2 = entry.oppf[j];
+      var li = document.createElement('div'); li.className='olinje';
+      li.textContent = o2.inn+' \u2192 '+o2.ut+'  ('+o2.varighet+')';
+      li.setAttribute('data-dato', o2.dato);
+      li.setAttribute('data-inn', o2.inn);
+      li.setAttribute('data-ut', o2.ut);
+      li.setAttribute('data-var', o2.varighet);
+      li.onclick = function() { openSlett(this); };
+      div.appendChild(li);
+    }
+    el.appendChild(div);
+  }
+}
+
+function openSlett(el) {
+  valgtSlett = {dato:el.getAttribute('data-dato'), inn:el.getAttribute('data-inn'), ut:el.getAttribute('data-ut'), varighet:el.getAttribute('data-var')};
+  document.getElementById('slettDato').textContent = valgtSlett.dato;
+  document.getElementById('slettTid').textContent = valgtSlett.inn+' \u2192 '+valgtSlett.ut+'  ('+valgtSlett.varighet+')';
+  document.getElementById('slettPanel').className = 'panel on';
+  document.getElementById('overlay').className = 'overlay on';
+}
+
+function bekreftSlett() {
+  if (!valgtSlett) return;
+  for (var i=0; i<logg.length; i++) {
+    var o = logg[i];
+    if (o.dato===valgtSlett.dato && o.inn===valgtSlett.inn && o.ut===valgtSlett.ut && o.varighet===valgtSlett.varighet) {
+      logg.splice(i,1); break;
+    }
+  }
+  saveLogg(); updateStats(); closeAll(); renderLogg();
+}
+
+function closeAll() {
+  valgtSlett = null;
+  document.getElementById('slettPanel').className = 'panel';
+  document.getElementById('settPanel').className = 'panel';
+  document.getElementById('overlay').className = 'overlay';
+}
+
+function openSettings() {
+  document.getElementById('settTimer').value = normMin/60;
+  document.getElementById('settPanel').className = 'panel on';
+  document.getElementById('overlay').className = 'overlay on';
+}
+
+function saveSettings() {
+  var v = parseFloat(document.getElementById('settTimer').value);
+  if (isNaN(v) || v<=0 || v>24) { alert('Skriv inn et tall mellom 0.5 og 24'); return; }
+  normMin = v*60;
+  try { localStorage.setItem('normaltid', String(v)); } catch(e) {}
+  closeAll(); updateStats(); renderLogg();
+}
+
+function doExport() {
+  var n = new Date();
+  var data = {normaltidTimer: normMin/60, eksportert: n.toLocaleString('no-NO'), registreringer: logg};
+  var json = JSON.stringify(data, null, 2);
+  var blob = new Blob([json], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'timeregistrering.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function doImport(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var data, reg;
+    try { data = JSON.parse(ev.target.result); } catch(err) { alert('Kunne ikke lese filen.'); return; }
+    reg = data.registreringer || data;
+    if (!Array.isArray(reg)) { alert('Ugyldig fil'); return; }
+    if (!confirm('Dette erstatter alle registreringer. Fortsette?')) return;
+    logg = reg;
+    if (data.normaltidTimer) {
+      normMin = data.normaltidTimer*60;
+      try { localStorage.setItem('normaltid', String(data.normaltidTimer)); } catch(err2) {}
+    }
+    saveLogg(); updateStats(); renderLogg();
+    alert('Importert '+reg.length+' registreringer!');
+    closeAll();
+  };
+  reader.readAsText(file);
+}
+
+function fmtTid(d) { return p2(d.getHours())+':'+p2(d.getMinutes()); }
+
+function sjekkInn() {
+  innTid = new Date(); utTid = null;
+  document.getElementById('btnInn').disabled = true;
+  document.getElementById('btnUt').disabled = false;
+  document.getElementById('innTxt').textContent = fmtTid(innTid);
+  document.getElementById('utTxt').textContent = '';
+  document.getElementById('todaySum').style.display = 'none';
+}
+
+function sjekkUt() {
+  utTid = new Date();
+  document.getElementById('btnInn').disabled = false;
+  document.getElementById('btnUt').disabled = true;
+  document.getElementById('utTxt').textContent = fmtTid(utTid);
+  var diffM = (utTid-innTid)/60000;
+  var varighet = Math.floor(diffM/60)+'t '+p2(Math.floor(diffM%60))+'min';
+  var s = document.getElementById('todaySum');
+  s.style.display = ''; s.textContent = 'Arbeidstid: '+varighet;
+  lagre(todayStr, fmtTid(innTid), fmtTid(utTid), diffM, varighet);
+}
+
+function lagre(dato, inn, ut, min, varighet) {
+  logg.unshift({dato:dato, inn:inn, ut:ut, minutter:min, varighet:varighet});
+  if (logg.length > 200) logg.pop();
+  saveLogg(); updateStats(); renderLogg();
+}
+
+function autoDato(el) {
+  var v = el.value.replace(/[^\d.]/g,'');
+  if (v.length===2 && v.indexOf('.')===-1) v+='.';
+  else if (v.length===5 && v.split('.').length===2) v+='.';
+  el.value = v.slice(0,10);
+}
+
+function autoTid(el) {
+  var v = el.value.replace(/[^\d:]/g,'');
+  if (v.length===2 && v.indexOf(':')===-1) v+=':';
+  el.value = v.slice(0,5);
+}
+
+function registrerManuelt() {
+  var dato = document.getElementById('mDato').value.trim();
+  var innStr = document.getElementById('mInn').value.trim();
+  var utStr = document.getElementById('mUt').value.trim();
+  if (dato.length!==10) { alert('Skriv dato som dd.mm.yyyy'); return; }
+  if (innStr.length!==5 || utStr.length!==5) { alert('Skriv tid som tt:mm'); return; }
+  var ih=parseInt(innStr), im=parseInt(innStr.split(':')[1]);
+  var uh=parseInt(utStr), um=parseInt(utStr.split(':')[1]);
+  if (isNaN(ih)||isNaN(im)||ih>23||im>59) { alert('Ugyldig inn-tid'); return; }
+  if (isNaN(uh)||isNaN(um)||uh>23||um>59) { alert('Ugyldig ut-tid'); return; }
+  var innM=ih*60+im, utM=uh*60+um;
+  if (utM<=innM) { alert('Ut-tid må være etter inn-tid'); return; }
+  var diffM = utM-innM;
+  var varighet = Math.floor(diffM/60)+'t '+p2(diffM%60)+'min';
+  lagre(dato, innStr, utStr, diffM, varighet);
+  document.getElementById('mDato').value = todayStr;
+  document.getElementById('mInn').value = '';
+  document.getElementById('mUt').value = '';
+  alert('Lagret!');
+}
+
+var dager = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+var mndr = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+document.getElementById('dateTxt').textContent = dager[now.getDay()]+' '+now.getDate()+'. '+mndr[now.getMonth()]+' '+now.getFullYear();
+document.getElementById('mDato').value = todayStr;
+
+function updateClock() {
+  var n = new Date();
+  document.getElementById('clockTxt').innerHTML = p2(n.getHours())+':'+p2(n.getMinutes())+'<span>:'+p2(n.getSeconds())+'</span>';
+  if (innTid && !utTid) {
+    var b = document.getElementById('activeBadge');
+    b.style.display = 'inline-block';
+    var dm = Math.floor((n-innTid)/60000);
+    b.textContent = 'Inne siden '+fmtTid(innTid)+' \u2014 '+Math.floor(dm/60)+'t '+p2(dm%60)+'min';
+  }
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+updateStats();
+renderLogg();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+</body>
+</html>
